@@ -12,8 +12,6 @@
 LD R6, INPUT
 JSRR R6
 
-ADD R5, R5, #1
-
 LD R6, ADD_NUM
 JSRR R6
 
@@ -180,109 +178,44 @@ errorMessage .FILL x6100
 
 .ORIG x3600
 ;=======================================================================
-; Subroutine: DeciOUT
-; Parameter : R2
+; Subroutine: DISPLAY
+; Parameter : R5
 ; Postcondition: add input up and combine into a single decimal value +1 
-; Return Value: 16-bit  R2
+; Return Value: NULL
 
 ;=======================================================================
 ;========================
 ; Subroutine Instructions
 ;========================
-
-
 ST R7, BACKUP_R7_3600
-ADD R2, R2, R5
-AND R4, R4, #0 ;clear reg just to make sure it's clean
-LD R5, HEX_ZERO_3600; get ascii for display
 
-;=====================
-;first subtract r2 by 10,000
-MINUS_10000
-LD R1, TEN_THOUSAND
+ADD R5, R5, #1
 
-DO_10000_OP
-  ADD R3, R2, #0 ; keep a backup to restore later
-  ADD R2, R2, R1
-  BRn MINUS_1000
-  ADD R4, R4, #1
-BR DO_10000_OP
 
-;==================
-;subtract r2 by 1000
-MINUS_1000
-  ADD R0, R4, R5 ;display the last counter
-BRz LeadingZeroSkip
-OUT
+;================
+;TEST R5 - 10000
+;================
+LD R0, TEN_THOUSAND
+MINUS_TEN_THOUSAND
+  ADD R0, R0, R5
+  
 
-LeadingZeroSkip
-  AND R4, R4, #0 ;clear reg just to make sure it's clean
-  ADD R2, R3 , #0
-  LD R1, ONE_THOUSAND
-  DO_1000_OP
-  ADD R3, R2, #0 ; keep a backup to restore later
-  ADD R2, R2, R1
-BRn MINUS_100
-  ADD R4, R4, #1
-BR DO_1000_OP
 
-;==================
-;subtract r2 by 100
-MINUS_100
-  ADD R0, R4, R5 ;display the last counter
-BRz LeadingZeroSkip1
-OUT
-
-LeadingZeroSkip1
-AND R4, R4, #0 ;clear reg just to make sure it's clean
-ADD R2, R3 , #0
-LD R1, ONE_HUNDRED
-DO_100_OP
-ADD R3, R2, #0 ; keep a backup to restore later
-ADD R2, R2, R1
-BRn MINUS_10
-ADD R4, R4, #1
-BR DO_100_OP
-
-;==================
-;subtract r2 by 1000
-MINUS_10
-ADD R0, R4, R5 ;display the last counter
-BRz LeadingZeroSkip2
-OUT
-
-LeadingZeroSkip2
-AND R4, R4, #0 ;clear reg just to make sure it's clean
-ADD R2, R3 , #0
-LD R1, TEN
-DO_10_OP
-ADD R3, R2, #0 ; keep a backup to restore later
-ADD R2, R2, R1
-BRn FINISH
-ADD R4, R4, #1
-BR DO_10_OP
-
-FINISH
-
-ADD R0, R4, R5
-OUT
-ADD R0, R3, R5
-OUT
 
 
 LD R7, BACKUP_R7_3600
 RET
 
-;---------------	
+;===============	
 ;Data
-;---------------
+;===============
 BACKUP_R7_3600		.BLKW #1
 HEX_ZERO_3600		.FILL #48
 TEN_THOUSAND		.FILL #-10000
 ONE_THOUSAND		.FILL #-1000
 ONE_HUNDRED		.FILL #-100
 TEN			.FILL #-10
-counter 		.FILL #0
+COUNT	 		.FILL #0
 
 
 

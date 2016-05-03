@@ -180,7 +180,7 @@ errorMessage .FILL x6100
 
 .ORIG x3600
 ;=======================================================================
-; Subroutine: DeciOUT
+; Subroutine: DeciAdd
 ; Parameter : R2
 ; Postcondition: add input up and combine into a single decimal value +1 
 ; Return Value: 16-bit  R2

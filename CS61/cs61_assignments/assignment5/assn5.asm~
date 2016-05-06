@@ -48,10 +48,13 @@ STR R5, R1, #0
 LD R6, MUL_INPUT
 JSRR R6
 
+LD R1, FINAL_ANSWER_PTR
+STR R0, R1, #0
 ;=================
 ;DISPLAY
 ;=================
-
+LD R1, INPUT_1_PTR_3000
+AND R0, R0, #0
 
 HALT
 ;---------------	
@@ -288,11 +291,137 @@ R7_BACKUP_3400 	.BLKW #1
 ;-------------------
 .ORIG x3800
 
-;HINT back up 
+;=======================================================================
+; Subroutine: DISPLAY
+; Parameter : R5
+; Postcondition: add input up and combine into a single decimal value +1 
+; Return Value: NULL
 
-;HINT Restore
+;=======================================================================
+;========================
+; Subroutine Instructions
+;========================
+ST R7, BACKUP_R7_3800
 
-;Data for subroutine
+ADD R5, R5, #1
+BRzp IS_NOT_NEG
+NOT R5, R5
+ADD R5, R5, #1
+
+LD R0, HEX_MINUS_3800
+OUT
+
+IS_NOT_NEG
+;================
+;TEST R5 - 10000
+;================
+LD R0, TEN_THOUSAND
+MINUS_TEN_THOUSAND
+  ADD R5, R5, R0
+BRn MINUS_ONE_THOUSAND
+  ADD R4, R4, #1
+BR MINUS_TEN_THOUSAND
+
+;================
+;TEST R5 - 1000
+;================
+MINUS_ONE_THOUSAND
+LD R0, RESTORE_TEN_THOUSAND
+ADD R5, R5, R0
+ADD R4, R4, #0
+BRz SKIP_LEADING_0_ONE
+
+OP_LOOP_ONE_THOUSAND
+	LD R0, HEX_ZERO_3800
+	ADD  R0, R4 ,R0
+	OUT
+	AND R4, R4, #0		;CALEAR CONUNTER
+	SKIP_LEADING_0_ONE
+	LD R0, ONE_THOUSAND	;R0 = -1000
+	ADD R5, R5, R0		;CHECK R5 > 1000
+BRn MINUS_ONE_HUNDRED
+	ADD R4, R4 , #1		;INCREMENT COUNTER BY 1
+BR SKIP_LEADING_0_ONE	;GET BACK TO MINUS 1000 LOOP 
+  
+;================
+;TEST R5 - 100
+;================  
+MINUS_ONE_HUNDRED
+LD R0, RESTORE_ONE_THOUSAND
+ADD R5, R5, R0
+ADD R4, R4, #0
+BRz SKIP_LEADING_0_TWO
+
+OP_LOOP_ONE_HUNDRED
+	LD R0, HEX_ZERO_3800
+	ADD  R0, R4 ,R0
+	OUT
+	AND R4, R4, #0
+	SKIP_LEADING_0_TWO
+	LD R0, ONE_HUNDRED
+	ADD R5, R5, R0
+BRn MINUS_TEN
+	ADD R4, R4, #1
+BR SKIP_LEADING_0_TWO
+
+;================
+;TEST R5 - 10
+;================ 
+MINUS_TEN
+LD R0, RESTORE_ONE_HUNDRED
+ADD R5, R5, R0
+ADD R4, R4, #0
+BRz SKIP_LEADING_0_THREE
+
+OP_LOOP_TEN
+	LD R0, HEX_ZERO_3800
+	ADD  R0, R4 ,R0
+	OUT
+	AND R4, R4, #0
+	SKIP_LEADING_0_THREE
+	LD R0, TEN
+	ADD R5, R5, R0
+BRn FINAL_OUTPUT
+	ADD R4, R4, #1
+BR SKIP_LEADING_0_THREE
+
+;================
+;OUTPUT R5 REMAIN
+;================ 
+FINAL_OUTPUT
+LD R0, RESTORE_TEN
+ADD R5, R5, R0
+
+LD R0, HEX_ZERO_3800
+ADD R0, R0, R4
+OUT
+
+LD R0, HEX_ZERO_3800
+ADD R0, R0, R5
+OUT
+
+;LD R0, NEWLINE_3800
+;OUT
+
+LD R7, BACKUP_R7_3800
+RET
+
+;===============	
+;Data
+;===============
+BACKUP_R7_3800		.BLKW #1
+HEX_ZERO_3800		.FILL #48
+HEX_MINUS_3800		.FILL	x2D
+TEN_THOUSAND		.FILL #-10000
+ONE_THOUSAND		.FILL #-1000
+ONE_HUNDRED		.FILL #-100
+TEN			.FILL #-10
+RESTORE_TEN_THOUSAND	.FILL #10000
+RESTORE_ONE_THOUSAND	.FILL #1000
+RESTORE_ONE_HUNDRED	.FILL #100
+RESTORE_TEN		.FILL #10
+COUNT	 		.FILL #0
+NEWLINE_3800		.FILL	#10
 
 
 

@@ -34,12 +34,12 @@ LD R1, INPUT_1_PTR_3000
 STR R5, R1, #0
 
 
-;====================================
-;FIX NEGATIVE FLAG SET BY FIRST THING
-;====================================
-AND R6, R6,#0
-LD R5, FLAG_PTR
-STR R6, R5, #0
+; ;====================================
+; ;FIX NEGATIVE FLAG SET BY FIRST THING
+; ;====================================
+; AND R6, R6,#0
+; LD R5, FLAG_PTR
+; STR R6, R5, #0
 
 ;===============
 ;SECOND VALUE INPUT
@@ -151,7 +151,7 @@ FINAL_ANSWER_PTR	.FILL	x6400
 OVERFLOW_VALUE		.FILL	#0
 SIGN_1			.FILL	#0
 SIGN_2			.FILL	#0
-FLAG_PTR		.FILL	x324C
+;FLAG_PTR		.FILL	x324C
 
 
 
@@ -289,14 +289,17 @@ ERROR_LOOP
   
   NEED_NEWLINE
   ;Example of how to Output Error Message
-  LD R0, NEWLINE
-  OUT
+  LEA R0, NEWLINE
+  PUTS
   ENTER_ERROR
   LD R0, errorMessage  ;Output Error Message
   PUTS
 BR GENERAL_INPUT_LOOP
 
 END_PROGRAM
+;CLEAN UP FLAG STATUS
+ADD R4, R4, #0
+ST R4, FLAG
 LD R7, BACKUP_R7_3200
 
 RET
@@ -313,15 +316,15 @@ HEX_MINUS	.FILL	-x2D
 HEX_PLUS	.FILL	-x2B
 HEX_ENTER	.FILL	-#10
 FLAG		.FILL 	x0
-NEWLINE		.FILL	#10
+NEWLINE		.STRINGZ "\n"
 COUNTER		.FILL 	#6
 BACKUP_R7_3200	.BLKW #1
 
 
-;-------------------
+;======================================================================================
 ; Subroutine to multiply two numbers help in Register x and Register y and store result
 ; into Register z
-;-------------------
+;======================================================================================
 .ORIG x3400
 ;HINT back up 
 ST R7, R7_BACKUP_3400
@@ -356,7 +359,10 @@ LOAD_SEC_VALUE
 MUL_LOOP_CLEAR_R0
   AND R0, R0, #0
 
+AND R3, R3, #0
 ADD R2, R2, #0
+BRz MUL_LOOP_END
+ADD R1, R1, #0
 BRz MUL_LOOP_END
 
 MUL_LOOP

@@ -67,10 +67,15 @@ MENU_THREE 	LD R6, NUM_BUSY_MACHINES
 		JSRR R6
 		LEA R0, NEWLINE_X3000
 		PUTS
+		LEA R0, BUSYMACHINE1
+		PUTS
 		LD R6, print_number
 		JSRR R6
+		LEA R0, BUSYMACHINE2
+		PUTS
+BR MENU_SELECTION
 
-MENU_FOUR 	LD R6, ALL_MACHINES_BUSY
+MENU_FOUR 	LD R6, NUM_FREE_MACHINES
 		JSRR R6
 MENU_FIVE 	LD R6, ALL_MACHINES_BUSY
 		JSRR R6
@@ -89,6 +94,7 @@ MENU			.FILL x3200
 ALL_MACHINES_BUSY	.FILL x3400
 ALL_MACHINES_FREE	.FILL x3600
 NUM_BUSY_MACHINES	.FILL x3800
+NUM_FREE_MACHINES	.FILL X4000
 print_number		.FILL x4800
 
 ;Other data 
@@ -269,9 +275,7 @@ R7_BACKUP_X3800			.BLKW #1
 LOOP_COUNT			.FILL x16
 
 
-
-
-
+.ORIG x4000
 ;-----------------------------------------------------------------------------------------------------------------
 ; Subroutine: NUM_FREE_MACHINES
 ; Inputs: None
@@ -282,13 +286,15 @@ LOOP_COUNT			.FILL x16
 ;INSERT CODE For Subroutine NUM_FREE_MACHINES
 ;--------------------------------
 ;HINT back up 
+ST R7, R7_BACKUP_X4000
 
 ;HINT Restore
-
+LD R7, R7_BACKUP_X4000
 ;--------------------------------
 ;Data for subroutine NUM_FREE_MACHINES
 ;--------------------------------
 BUSYNESS_ADDR_NUM_FREE_MACHINES .Fill xA000
+R7_BACKUP_X4000		.BLKW #1
 
 
 ;-----------------------------------------------------------------------------------------------------------------
@@ -349,7 +355,7 @@ prompt .STRINGZ "Enter which machine you want the status of (0 - 15), followed b
 Error_message_2 .STRINGZ "ERROR INVALID INPUT\n"
 	
 
-x4800
+.ORIG x4800
 ;-----------------------------------------------------------------------------------------------------------------
 ; Subroutine: print number
 ; Inputs: 
@@ -368,25 +374,10 @@ AND R4, R4, #0
 AND R3, R3, #0
 AND R5, R5, #0
 ADD R5, R2, R5
-AND R2, R2, #0
-ADD R5, R5, R0
+
+ADD R5, R5, #0
 BRz SKIP_LEADING_0_FOUR
 
-
-AND R5, R5, #0
-ADD R5, R5, R0
-BRp IS_NOT_NEG
-
-NOT R5, R5
-ADD R5, R5, #1
-
-LD R0, HEX_MINUS_4800
-OUT
-BR PRINTED_POS
-
-IS_NOT_NEG
-LD R0, HEX_PLUS_4800
-OUT
 
 
 PRINTED_POS
@@ -493,7 +484,8 @@ SKIP_LEADING_0_FOUR
 LD R0, HEX_ZERO_4800
 ADD R0, R0, R5
 OUT
-
+;LEA R0, NEWLINE_4800
+;PUTS
 
 LD R7, BACKUP_R7_4800
 RET
@@ -516,7 +508,7 @@ RESTORE_ONE_THOUSAND	.FILL #1000
 RESTORE_ONE_HUNDRED	.FILL #100
 RESTORE_TEN		.FILL #10
 COUNT	 		.FILL #0
-NEWLINE_4800		.FILL	#10
+;NEWLINE_4800		.STRINGZ "\n"
 
 
 

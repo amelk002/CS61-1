@@ -74,16 +74,57 @@ MENU_THREE 	LD R6, NUM_BUSY_MACHINES
 		LEA R0, BUSYMACHINE2
 		PUTS
 BR MENU_SELECTION
-
 MENU_FOUR 	LD R6, NUM_FREE_MACHINES
 		JSRR R6
-MENU_FIVE 	LD R6, ALL_MACHINES_BUSY
+		LEA R0, NEWLINE_X3000
+		PUTS
+		LEA R0, FREEMACHINE1
+		PUTS
+		LD R6, print_number
 		JSRR R6
-MENU_SIX 	LD R6, ALL_MACHINES_BUSY
+		LEA R0, FREEMACHINE2
+		PUTS
+BR MENU_SELECTION
+MENU_FIVE 	LD R6, Get_input
 		JSRR R6
+		AND R2, R2, #0
+		ADD R2, R5, R2
+		LEA R0, STATUS1
+		PUTS
+		LD R6, print_number
+		JSRR R6
+		LD R6, MACHINE_STATUS
+		JSRR R6
+		ADD R2, R2, #0
+		BRz MENU_BUSY_STATUS
+		LEA R0, STATUS3
+		PUTS
+		BR MENU_SELECTION
+		MENU_BUSY_STATUS LEA R0, STATUS2
+				 PUTS
+BR MENU_SELECTION
+MENU_SIX 	LD R6, FIRST_FREE
+		JSRR R6
+		LEA R0, NEWLINE_X3000
+		PUTS
+		ADD R2, R2, #0
+		BRn MENU_NO_FREE
+		LEA R0, FIRSTFREE
+		PUTS
+		LD R6, print_number
+		JSRR R6
+		LEA R0, NEWLINE_X3000
+		PUTS
+		BR MENU_SELECTION
+		MENU_NO_FREE	LEA R0, FIRSTFREE3
+				PUTS
 BR MENU_SELECTION
     
 QUIT
+LEA R0, NEWLINE_X3000
+PUTS
+LEA R0, Goodbye
+PUTS
 
 HALT
 ;---------------	
@@ -94,7 +135,10 @@ MENU			.FILL x3200
 ALL_MACHINES_BUSY	.FILL x3400
 ALL_MACHINES_FREE	.FILL x3600
 NUM_BUSY_MACHINES	.FILL x3800
-NUM_FREE_MACHINES	.FILL X4000
+NUM_FREE_MACHINES	.FILL x4000
+MACHINE_STATUS		.FILL x4200
+FIRST_FREE		.FILL x4400
+Get_input		.FILL x4600
 print_number		.FILL x4800
 
 ;Other data 
@@ -140,7 +184,7 @@ INPUT_LOOP_X3200 LD R0, Menu_string_addr
 
 		 LD R1, HEX_ZERO_X3200
 		 ADD R1, R1, R0
-BRn BAD_INPUT
+BRnz BAD_INPUT
 		 LD R1, HEX_SEVEN_X3200
 		 ADD R1, R1, R0
 BRp BAD_INPUT
@@ -186,16 +230,12 @@ HEX_SEVEN_X3200		.FILL -x37
 ST R7, R7_BACKUP_X3400
 AND R2, R2, #0
 
-LD R0, BUSYNESS_ADDR_ALL_MACHINES_BUSY
-LDR R0, R1, #0
-BRz BUSY
+LDI R0, BUSYNESS_ADDR_ALL_MACHINES_BUSY
+ADD R0, R0, #0
+BRnp NOT_BUSY
 ADD R2, R2, #1
-BR DONE_ALL_MACHINES_BUSY
 
-BUSY
-DONE_ALL_MACHINES_BUSY
-LD R7, R7_BACKUP_X3400
-RET
+NOT_BUSY
 ;HINT Restore7
 LD R7, R7_BACKUP_X3400
 RET
@@ -252,14 +292,13 @@ R7_BACKUP_X3600			.BLKW #1
 ;HINT back up 
 ST R7, R7_BACKUP_X3800
 
-LD R0, BUSYNESS_ADDR_NUM_BUSY_MACHINES
-LDR R0, R1, #0
+LDI R1, BUSYNESS_ADDR_NUM_BUSY_MACHINES
 AND R2, R2, #0
 LD R3,LOOP_COUNT
 
 BUSY_MACHINES	ADD R1 ,R1,#0
-BRn NOT_BUSY_MACHINES
-ADD R2, R2, #1
+		BRn NOT_BUSY_MACHINES
+		ADD R2, R2, #1
 NOT_BUSY_MACHINES	ADD R1, R1, R1
 			ADD R3, R3, #-1
 BRp BUSY_MACHINES
@@ -272,7 +311,7 @@ RET
 ;--------------------------------
 BUSYNESS_ADDR_NUM_BUSY_MACHINES .Fill xA000
 R7_BACKUP_X3800			.BLKW #1
-LOOP_COUNT			.FILL x16
+LOOP_COUNT			.FILL #16
 
 
 .ORIG x4000
@@ -287,16 +326,29 @@ LOOP_COUNT			.FILL x16
 ;--------------------------------
 ;HINT back up 
 ST R7, R7_BACKUP_X4000
+LD R0, BUSYNESS_ADDR_NUM_FREE_MACHINES
+LDR R1, R0, #0
+AND R2, R2, 0
+LD R3, LOOP_COUNT_X4000
 
+FREE_MACHINES	ADD R1, R1, #0
+		BRzp NOT_FREE_MACHINE
+		ADD R2, R2, #1
+NOT_FREE_MACHINE ADD R1, R1, R1
+		 ADD R3, R3,#-1
+BRp FREE_MACHINES
 ;HINT Restore
 LD R7, R7_BACKUP_X4000
+RET
 ;--------------------------------
 ;Data for subroutine NUM_FREE_MACHINES
 ;--------------------------------
 BUSYNESS_ADDR_NUM_FREE_MACHINES .Fill xA000
 R7_BACKUP_X4000		.BLKW #1
+LOOP_COUNT_X4000	.FILL #16
 
 
+.ORIG x4200
 ;-----------------------------------------------------------------------------------------------------------------
 ; Subroutine: MACHINE_STATUS
 ; Input (R1): Which machine to check
@@ -308,14 +360,32 @@ R7_BACKUP_X4000		.BLKW #1
 ;INSERT CODE For Subroutine MACHINE_STATUS
 ;--------------------------------
 ;HINT back up 
+ST R7, R7_BACKUP_X4200
+AND R3, R3, #0
+AND R2, R2, #0
 
+LDI R0, BUSYNESS_ADDR_MACHINE_STATUS	
+ADD R3, R3, #1
+APPLY_MASK	ADD R3, R3, R3
+		ADD R1, R1, -x1
+BRp APPLY_MASK
+
+AND R3, R3, R0
+BRz MACHINE_BUSY
+ADD R2, R2, #1
+
+
+MACHINE_BUSY
 ;HINT Restore
-
+LD R7, R7_BACKUP_X4200
+RET
 ;--------------------------------
 ;Data for subroutine MACHINE_STATUS
 ;--------------------------------
 BUSYNESS_ADDR_MACHINE_STATUS.Fill xA000
+R7_BACKUP_X4200		.BLKW #1
 
+.ORIG x4400
 ;-----------------------------------------------------------------------------------------------------------------
 ; Subroutine: FIRST_FREE
 ; Inputs: None
@@ -327,14 +397,35 @@ BUSYNESS_ADDR_MACHINE_STATUS.Fill xA000
 ;INSERT CODE For Subroutine FIRST_FREE
 ;--------------------------------
 ;HINT back up 
+ST R7, R7_BACKUP_X4400
+LDI R0, BUSYNESS_ADDR_FIRST_FREE
+AND R1, R1, #0
+AND R2, R2, #0
+ADD R1, R1, #1
+LD R3, FIRST_FREE_COUNT
+
+FIRST_FREE_COUNT_LOOP	AND R1, R1, R0
+			BRp EXIT_FIRST_FREE
+			ADD R1, R1, R1
+			ADD R2, R2, R2
+			ADD R3, R3, #-1
+BRp FIRST_FREE_COUNT_LOOP
+AND R2, R2, #0
+ADD R2, R2, #-1
+
+EXIT_FIRST_FREE
 
 ;HINT Restore
-
+LD R7, R7_BACKUP_X4400
+RET
 ;--------------------------------
 ;Data for subroutine FIRST_FREE
 ;--------------------------------
 BUSYNESS_ADDR_FIRST_FREE .Fill xA000
+R7_BACKUP_X4400		.BLKW #1
+FIRST_FREE_COUNT	.FILL #16
 
+.ORIG x4600
 ;-----------------------------------------------------------------------------------------------------------------
 ; Subroutine: Get input
 ; Inputs: None
@@ -347,7 +438,166 @@ BUSYNESS_ADDR_FIRST_FREE .Fill xA000
 ;-------------------------------
 ;INSERT CODE For Subroutine 
 ;--------------------------------
+ST R7, BACKUP_R7_4600
 
+GENERAL_INPUT_LOOP
+  ;Example of how to Output Intro Message
+  LEA R0, NEWLINE
+  PUTS
+GENERAL_INPUT_LOOP_NO_NEWLINE
+  LEA R0, prompt  ;Output Intro Message
+  PUTS
+
+INPUT_LOOP
+  ;=============
+  ;CLEAR REG
+  ;=============
+  AND R6, R6, #0
+  AND R5, R5, #0		;R5 -> 0
+  AND R4, R4, #0
+  AND R3, R3, #0
+  AND R2, R2, #0
+  AND R1, R1, #0
+  AND R0, R0, #0
+  ST R0, FLAG
+  
+  LD R3, COUNTER
+
+GET_NUM
+  ;========
+  ;INPUT
+  ;========
+  GETC 
+  OUT
+
+  ;==========================
+  ;CHECK IF INPUT IS IN RANGE
+  ;==========================
+  CHECK_IF_NUM
+    ADD R3, R3, -x1	;DECREMENT LOOP
+
+  CHECK_LESS_THAN_ZERO
+    LD R2, HEX_ZERO
+    ADD R2, R2, R0
+  BRn ERROR_LOOP
+  
+  CHECK_GREATER_THAN_NINE
+    LD R2, HEX_NINE
+    ADD R2, R2, R0
+  BRp ERROR_LOOP
+  
+  INCREMENT_LOOP
+    ADD R4, R5, x0
+
+    ADD R4, R4, R4
+    ADD R5, R5, R5
+    ADD R5, R5, R5
+    ADD R5, R5, R5
+    
+    ADD R5, R4, R5
+    AND R4, R4, x0
+
+
+
+  LD R6, HEX_ZERO
+  ADD R0, R0, R6
+  ADD R5, R5, R0 
+  ADD R3, R3, #0	;DECREMENT LOOP
+
+  
+  BRp GET_NUM
+
+  LD R0, NEWLINE	;PRINT NEWLINE
+  OUT
+  BR TWO_COMPLIMENT
+
+;====================
+;TURN NUMBER NEGATIVE
+;====================
+TWO_COM_FLAG
+  
+  ADD R6, R3, #-2 	;CHECK IF COUNTER IS LESS THAN 5
+  BRn NEED_NEWLINE
+
+  LD R2, FLAG
+  ADD R2, R2, -x1
+  ST R2, FLAG
+BR GET_NUM
+
+TWO_COMPLIMENT
+  LD R2, FLAG
+  ADD R2, R2, x0
+BRzp END_PROGRAM
+  NOT R5, R5
+  ADD R5, R5, #1
+BR END_PROGRAM
+
+
+
+;==================
+;CHECKING FOR ERROR
+;==================
+ERROR_LOOP
+
+  ;===========================
+  ;CHECK IF THE INPUT WAS SIGN
+  ;===========================
+  CHECK_IF_MINUS
+    LD R2, HEX_MINUS
+    ADD R2, R2, R0
+  BRz TWO_COM_FLAG
+  CHECK_IF_PLUS
+    LD R2, HEX_PLUS
+    ADD R2, R2, R0
+  BRz CHECK_LOOP_LESS_THAN_5
+  CHECK_IF_ENTER
+    ADD R6, R3, #-2 	;CHECK IF COUNTER IS LESS THAN 5
+    BRz ENTER_ERROR
+    LD R2, HEX_ENTER
+    ADD R2, R2, R0
+  BRz TWO_COMPLIMENT
+  ;BR END_PROGRAM
+  
+  CHECK_LOOP_LESS_THAN_5
+    ADD R6, R3, #-2 	;CHECK IF COUNTER IS LESS THAN 5
+    BRn NEED_NEWLINE
+  BR GET_NUM
+  
+  NEED_NEWLINE
+  ;Example of how to Output Error Message
+  LEA R0, NEWLINE
+  PUTS
+  ENTER_ERROR
+  LEA R0, Error_message_2  ;Output Error Message
+  PUTS
+BR GENERAL_INPUT_LOOP_NO_NEWLINE
+
+END_PROGRAM
+ADD R5, R5, #0
+BRn ENTER_ERROR
+LD R0, UPPER_BOUND
+ADD R0, R0, R5
+BRp ENTER_ERROR
+
+AND R1, R1, #0
+ADD R1, R1, R5
+
+LD R7, BACKUP_R7_4600
+
+RET
+;HINT Restore
+
+;Data for subroutine
+HEX_ZERO	.FILL	-x30
+HEX_NINE	.FILL	-x39
+HEX_MINUS	.FILL	-x2D
+HEX_PLUS	.FILL	-x2B
+HEX_ENTER	.FILL	-#10
+FLAG		.FILL 	x0
+NEWLINE		.STRINGZ "\n"
+COUNTER		.FILL 	#3
+UPPER_BOUND	.FILL -#15
+BACKUP_R7_4600	.BLKW #1
 ;--------------------------------
 ;Data for subroutine Get input
 ;--------------------------------
